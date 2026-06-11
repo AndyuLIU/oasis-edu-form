@@ -128,7 +128,7 @@
             },
             {
               "key": "員工|relation",
-              "pageId": "={{ $('查詢員工').item.json.id }}"
+              "pageId": "={{ $('查詢員工').item.json.id.replaceAll('-', '') }}"
             }
           ]
         }
