@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webhook Test — oásis 教課回報</title>
+  <style>
+    :root {
+      --primary: #2D5A4B;
+      --primary-dark: #1e3d32;
+      --bg: #f7f5f2;
+      --white: #ffffff;
+      --text: #2c2c2c;
+      --muted: #888;
+      --border: #ddd8d2;
+      --success: #1a7f4b;
+      --success-bg: #e8f5ee;
+      --error: #b3261e;
+      --error-bg: #fdecea;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 18px 60px;
+    }
+    .container { max-width: 680px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .subtitle { font-size: 0.875rem; color: var(--muted); margin-bottom: 24px; }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .row { display: grid; gap: 12px; margin-bottom: 12px; }
+    .row-2 { grid-template-columns: 1fr 1fr; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font: inherit;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.15s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    textarea { min-height: 72px; resize: vertical; font-size: 13px; font-family: "SF Mono", "Fira Code", monospace; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 4px; }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { opacity: 0.6; cursor: wait; }
+    .btn-secondary {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+    .result {
+      display: none;
+      margin-top: 16px;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 13px;
+    }
+    .result.success { background: var(--success-bg); border: 1px solid #a8d5bc; }
+    .result.error   { background: var(--error-bg);   border: 1px solid #f5b8b5; }
+    .result-label {
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+    .result.success .result-label { color: var(--success); }
+    .result.error   .result-label { color: var(--error); }
+    .result pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .badge-post { background: #dbeafe; color: #1d4ed8; }
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .url-display {
+      flex: 1;
+      padding: 8px 11px;
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12.5px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Webhook Test</h1>
+  <p class="subtitle">oásis 教課回報 — n8n 端點測試工具</p>
+
+  <div class="card">
+    <div class="card-title">端點設定</div>
+    <div class="row">
+      <div>
+        <label>Webhook URL</label>
+        <input type="text" id="webhookUrl" value="https://andy1996.zeabur.app/webhook/edu-report">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Payload</div>
+
+    <div class="row row-2">
+      <div>
+        <label>lineUserId</label>
+        <input type="text" id="lineUserId" value="U1234567890abcdef1234567890abcdef">
+      </div>
+      <div>
+        <label>name（設計師姓名）</label>
+        <input type="text" id="name" value="歐文">
+      </div>
+    </div>
+
+    <div class="row row-2">
+      <div>
+        <label>store（分店）</label>
+        <input type="text" id="store" value="民權店">
+      </div>
+      <div>
+        <label>courseDate（課程日期）</label>
+        <input type="date" id="courseDate">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>organizer（主辦單位）</label>
+        <input type="text" id="organizer" value="某品牌活動">
+      </div>
+    </div>
+
+    <div class="row row-2">
+      <div>
+        <label>estimatedFee（費用）</label>
+        <input type="number" id="estimatedFee" value="3000" min="0">
+      </div>
+      <div>
+        <label>notes（備註）</label>
+        <input type="text" id="notes" placeholder="選填">
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label>JSON 預覽（可直接編輯）</label>
+      <textarea id="jsonPreview" rows="10"></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="sendBtn" onclick="send()">送出測試</button>
+      <button class="btn-secondary" onclick="syncJson()">重新產生 JSON</button>
+      <button class="btn-secondary" onclick="resetFields()">重置欄位</button>
+    </div>
+
+    <div class="result" id="result">
+      <div class="result-label" id="resultLabel"></div>
+      <pre id="resultBody"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+  const fields = ['lineUserId','name','store','courseDate','organizer','estimatedFee','notes'];
+
+  function buildPayload() {
+    return {
+      lineUserId:   document.getElementById('lineUserId').value.trim(),
+      name:         document.getElementById('name').value.trim(),
+      store:        document.getElementById('store').value.trim(),
+      courseDate:   document.getElementById('courseDate').value,
+      organizer:    document.getElementById('organizer').value.trim(),
+      estimatedFee: Number(document.getElementById('estimatedFee').value),
+      notes:        document.getElementById('notes').value.trim(),
+      submittedAt:  new Date().toISOString(),
+      source:       'webhook-test'
+    };
+  }
+
+  function syncJson() {
+    document.getElementById('jsonPreview').value = JSON.stringify(buildPayload(), null, 2);
+  }
+
+  function resetFields() {
+    document.getElementById('lineUserId').value   = 'U1234567890abcdef1234567890abcdef';
+    document.getElementById('name').value         = '歐文';
+    document.getElementById('store').value        = '民權店';
+    document.getElementById('courseDate').value   = new Date().toISOString().slice(0,10);
+    document.getElementById('organizer').value    = '某品牌活動';
+    document.getElementById('estimatedFee').value = '3000';
+    document.getElementById('notes').value        = '';
+    syncJson();
+  }
+
+  async function send() {
+    const url = document.getElementById('webhookUrl').value.trim();
+    const btn = document.getElementById('sendBtn');
+    const resultEl  = document.getElementById('result');
+    const labelEl   = document.getElementById('resultLabel');
+    const bodyEl    = document.getElementById('resultBody');
+
+    let payload;
+    try {
+      payload = JSON.parse(document.getElementById('jsonPreview').value);
+    } catch (e) {
+      showResult('error', 'JSON 格式錯誤', e.message);
+      return;
+    }
+
+    payload.submittedAt = new Date().toISOString();
+    document.getElementById('jsonPreview').value = JSON.stringify(payload, null, 2);
+
+    btn.disabled    = true;
+    btn.textContent = '送出中…';
+    resultEl.style.display = 'none';
+
+    try {
+      const res = await fetch(url, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload)
+      });
+
+      const text = await res.text();
+      let pretty;
+      try { pretty = JSON.stringify(JSON.parse(text), null, 2); }
+      catch { pretty = text; }
+
+      if (res.ok) {
+        showResult('success', `✓ ${res.status} ${res.statusText}`, pretty);
+      } else {
+        showResult('error', `✕ ${res.status} ${res.statusText}`, pretty);
+      }
+    } catch (err) {
+      showResult('error', '✕ 連線失敗', err.message);
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '送出測試';
+    }
+  }
+
+  function showResult(type, label, body) {
+    const resultEl = document.getElementById('result');
+    resultEl.className = `result ${type}`;
+    resultEl.style.display = 'block';
+    document.getElementById('resultLabel').textContent = label;
+    document.getElementById('resultBody').textContent  = body || '（無回應內容）';
+  }
+
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', syncJson);
+  });
+
+  document.getElementById('courseDate').value = new Date().toISOString().slice(0, 10);
+  syncJson();
+</script>
+</body>
+</html>
