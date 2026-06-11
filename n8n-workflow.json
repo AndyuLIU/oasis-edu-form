@@ -17,87 +17,189 @@
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const wh = $('Webhook').item.json;\nreturn [{\n  json: {\n    filter: {\n      property: 'Line UID',\n      rich_text: { equals: wh.lineUserId }\n    },\n    page_size: 1\n  }\n}];"
-      },
-      "id": "node-code-query",
-      "name": "組建查詢條件",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/databases/37a90c56cdca8038aee0d4bab701c17d/query",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "37a90c56cdca8038aee0d4bab701c17d",
+          "mode": "id"
+        },
+        "returnAll": false,
+        "limit": 1,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
             {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
+              "key": "Line UID|rich_text",
+              "condition": "rich_text_equals",
+              "richText": "={{ $('Webhook').item.json.lineUserId }}"
             }
           ]
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
-      "id": "node-http-query",
+      "id": "node-notion-query",
       "name": "查詢員工",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [680, 300],
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "settings": {
+        "alwaysOutputData": true
+      },
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "REPLACE_CREDENTIAL_ID",
-          "name": "Notion API"
+        "notionApi": {
+          "id": "REPLACE_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
         }
       }
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "jsCode": "const wh = $('Webhook').item.json;\nconst results = $input.first().json.results;\nconst employeeId = results?.[0]?.id ?? null;\n\nconst props = {\n  '名稱': {\n    title: [{ text: { content: `${wh.name} · ${wh.courseDate}` } }]\n  },\n  '設計師': {\n    rich_text: [{ text: { content: wh.name } }]\n  },\n  '課程日期': {\n    date: { start: wh.courseDate }\n  },\n  '主辦單位': {\n    rich_text: [{ text: { content: wh.organizer } }]\n  },\n  '費用': {\n    number: Number(wh.estimatedFee)\n  },\n  '備註': {\n    rich_text: [{ text: { content: wh.notes || '' } }]\n  },\n  'Line UID': {\n    rich_text: [{ text: { content: wh.lineUserId } }]\n  },\n  '送出時間': {\n    date: { start: wh.submittedAt }\n  }\n};\n\nif (employeeId) {\n  props['員工'] = { relation: [{ id: employeeId }] };\n}\n\nreturn [{\n  json: {\n    parent: { database_id: 'REPLACE_EDU_REPORT_DB_ID' },\n    properties: props\n  }\n}];"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-employee-exists",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "id": "node-code-build",
-      "name": "組建 Notion 資料",
-      "type": "n8n-nodes-base.code",
+      "id": "node-if",
+      "name": "員工是否存在？",
+      "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [680, 300]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.notion.com/v1/pages",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "REPLACE_EDU_REPORT_DB_ID",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
             {
-              "name": "Notion-Version",
-              "value": "2022-06-28"
+              "key": "名稱|title",
+              "title": "={{ $('Webhook').item.json.name }} · {{ $('Webhook').item.json.courseDate }}"
+            },
+            {
+              "key": "設計師|rich_text",
+              "richText": "={{ $('Webhook').item.json.name }}"
+            },
+            {
+              "key": "課程日期|date",
+              "date": "={{ $('Webhook').item.json.courseDate }}"
+            },
+            {
+              "key": "主辦單位|rich_text",
+              "richText": "={{ $('Webhook').item.json.organizer }}"
+            },
+            {
+              "key": "費用|number",
+              "number": "={{ $('Webhook').item.json.estimatedFee }}"
+            },
+            {
+              "key": "備註|rich_text",
+              "richText": "={{ $('Webhook').item.json.notes || '' }}"
+            },
+            {
+              "key": "Line UID|rich_text",
+              "richText": "={{ $('Webhook').item.json.lineUserId }}"
+            },
+            {
+              "key": "送出時間|date",
+              "date": "={{ $('Webhook').item.json.submittedAt }}"
+            },
+            {
+              "key": "員工|relation",
+              "pageId": "={{ $('查詢員工').item.json.id }}"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {}
+        }
       },
-      "id": "node-http-create",
-      "name": "建立教課記錄",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1120, 300],
+      "id": "node-create-with-relation",
+      "name": "建立教課記錄（含員工）",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [900, 180],
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "REPLACE_CREDENTIAL_ID",
-          "name": "Notion API"
+        "notionApi": {
+          "id": "REPLACE_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": {
+          "__rl": true,
+          "value": "REPLACE_EDU_REPORT_DB_ID",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "名稱|title",
+              "title": "={{ $('Webhook').item.json.name }} · {{ $('Webhook').item.json.courseDate }}"
+            },
+            {
+              "key": "設計師|rich_text",
+              "richText": "={{ $('Webhook').item.json.name }}"
+            },
+            {
+              "key": "課程日期|date",
+              "date": "={{ $('Webhook').item.json.courseDate }}"
+            },
+            {
+              "key": "主辦單位|rich_text",
+              "richText": "={{ $('Webhook').item.json.organizer }}"
+            },
+            {
+              "key": "費用|number",
+              "number": "={{ $('Webhook').item.json.estimatedFee }}"
+            },
+            {
+              "key": "備註|rich_text",
+              "richText": "={{ $('Webhook').item.json.notes || '' }}"
+            },
+            {
+              "key": "Line UID|rich_text",
+              "richText": "={{ $('Webhook').item.json.lineUserId }}"
+            },
+            {
+              "key": "送出時間|date",
+              "date": "={{ $('Webhook').item.json.submittedAt }}"
+            }
+          ]
+        }
+      },
+      "id": "node-create-no-relation",
+      "name": "建立教課記錄",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [900, 420],
+      "credentials": {
+        "notionApi": {
+          "id": "REPLACE_NOTION_CREDENTIAL_ID",
+          "name": "Notion account"
         }
       }
     },
@@ -111,24 +213,35 @@
       "name": "回應 200",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1340, 300]
+      "position": [1120, 300]
     }
   ],
   "connections": {
     "Webhook": {
-      "main": [[{ "node": "組建查詢條件", "type": "main", "index": 0 }]]
-    },
-    "組建查詢條件": {
-      "main": [[{ "node": "查詢員工", "type": "main", "index": 0 }]]
+      "main": [
+        [{ "node": "查詢員工", "type": "main", "index": 0 }]
+      ]
     },
     "查詢員工": {
-      "main": [[{ "node": "組建 Notion 資料", "type": "main", "index": 0 }]]
+      "main": [
+        [{ "node": "員工是否存在？", "type": "main", "index": 0 }]
+      ]
     },
-    "組建 Notion 資料": {
-      "main": [[{ "node": "建立教課記錄", "type": "main", "index": 0 }]]
+    "員工是否存在？": {
+      "main": [
+        [{ "node": "建立教課記錄（含員工）", "type": "main", "index": 0 }],
+        [{ "node": "建立教課記錄", "type": "main", "index": 0 }]
+      ]
+    },
+    "建立教課記錄（含員工）": {
+      "main": [
+        [{ "node": "回應 200", "type": "main", "index": 0 }]
+      ]
     },
     "建立教課記錄": {
-      "main": [[{ "node": "回應 200", "type": "main", "index": 0 }]]
+      "main": [
+        [{ "node": "回應 200", "type": "main", "index": 0 }]
+      ]
     }
   },
   "active": false,
