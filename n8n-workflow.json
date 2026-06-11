@@ -1,0 +1,138 @@
+{
+  "name": "oásis 教課回報",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "edu-report",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "edu-report"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const wh = $('Webhook').item.json;\nreturn [{\n  json: {\n    filter: {\n      property: 'Line UID',\n      rich_text: { equals: wh.lineUserId }\n    },\n    page_size: 1\n  }\n}];"
+      },
+      "id": "node-code-query",
+      "name": "組建查詢條件",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/databases/37a90c56cdca8038aee0d4bab701c17d/query",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-http-query",
+      "name": "查詢員工",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const wh = $('Webhook').item.json;\nconst results = $input.first().json.results;\nconst employeeId = results?.[0]?.id ?? null;\n\nconst props = {\n  '名稱': {\n    title: [{ text: { content: `${wh.name} · ${wh.courseDate}` } }]\n  },\n  '設計師': {\n    rich_text: [{ text: { content: wh.name } }]\n  },\n  '課程日期': {\n    date: { start: wh.courseDate }\n  },\n  '主辦單位': {\n    rich_text: [{ text: { content: wh.organizer } }]\n  },\n  '費用': {\n    number: Number(wh.estimatedFee)\n  },\n  '備註': {\n    rich_text: [{ text: { content: wh.notes || '' } }]\n  },\n  'Line UID': {\n    rich_text: [{ text: { content: wh.lineUserId } }]\n  },\n  '送出時間': {\n    date: { start: wh.submittedAt }\n  }\n};\n\nif (employeeId) {\n  props['員工'] = { relation: [{ id: employeeId }] };\n}\n\nreturn [{\n  json: {\n    parent: { database_id: 'REPLACE_EDU_REPORT_DB_ID' },\n    properties: props\n  }\n}];"
+      },
+      "id": "node-code-build",
+      "name": "組建 Notion 資料",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "node-http-create",
+      "name": "建立教課記錄",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }",
+        "options": {}
+      },
+      "id": "node-respond",
+      "name": "回應 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "組建查詢條件", "type": "main", "index": 0 }]]
+    },
+    "組建查詢條件": {
+      "main": [[{ "node": "查詢員工", "type": "main", "index": 0 }]]
+    },
+    "查詢員工": {
+      "main": [[{ "node": "組建 Notion 資料", "type": "main", "index": 0 }]]
+    },
+    "組建 Notion 資料": {
+      "main": [[{ "node": "建立教課記錄", "type": "main", "index": 0 }]]
+    },
+    "建立教課記錄": {
+      "main": [[{ "node": "回應 200", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

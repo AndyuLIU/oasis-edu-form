@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>oásis 教課回報</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    :root {
+      --primary: #2D5A4B;
+      --primary-dark: #1e3d32;
+      --primary-pale: #edf2f0;
+      --bg: #f7f5f2;
+      --white: #ffffff;
+      --text: #2c2c2c;
+      --text-muted: #888;
+      --border: #ddd8d2;
+      --danger: #b3261e;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .header {
+      background: var(--primary);
+      padding: 28px 20px 22px;
+      text-align: center;
+    }
+    .header-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 30px;
+      font-weight: 600;
+      color: #f4efe9;
+      letter-spacing: 0.1em;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: rgba(244,239,233,0.6);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 18px 48px;
+    }
+
+    .loading-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 16px;
+    }
+    .spinner {
+      width: 34px; height: 34px;
+      border: 3px solid #ddd;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-label { font-size: 14px; color: var(--text-muted); }
+
+    .status-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 20px 40px;
+      text-align: center;
+      gap: 10px;
+    }
+    .status-icon { font-size: 52px; line-height: 1; }
+    .status-title { font-size: 19px; font-weight: 500; margin-top: 4px; }
+    .status-desc { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+
+    .emp-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .emp-avatar {
+      width: 42px; height: 42px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #f4efe9;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .emp-name { font-size: 16px; font-weight: 500; }
+    .emp-role { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 18px;
+    }
+
+    .field + .field { margin-top: 18px; }
+
+    label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 7px;
+    }
+    .req { color: #b94; margin-left: 2px; }
+
+    input[type="date"],
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 11px 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--white);
+      -webkit-appearance: none;
+      appearance: none;
+      transition: border-color 0.18s;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    input.invalid, textarea.invalid {
+      border-color: var(--danger);
+    }
+    textarea { resize: vertical; min-height: 88px; }
+
+    .field-hint {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 5px;
+    }
+    .field-error {
+      font-size: 11.5px;
+      color: var(--danger);
+      margin-top: 5px;
+      display: none;
+    }
+    .field-error.visible { display: block; }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      background: var(--primary);
+      color: #f4efe9;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn-submit:active { background: var(--primary-dark); }
+    .btn-submit:disabled { background: #bbb; cursor: not-allowed; }
+
+    .btn-retry {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: transparent;
+      border: 1.5px solid var(--primary);
+      border-radius: var(--radius);
+      color: var(--primary);
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    .btn-retry:active { background: var(--primary-pale); }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">oásis</div>
+  <div class="header-sub">Teaching Report</div>
+</div>
+
+<!-- Loading -->
+<div id="screen-loading" class="screen active">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-label">驗證身份中…</div>
+  </div>
+</div>
+
+<!-- Not bound -->
+<div id="screen-not-bound" class="screen">
+  <div class="status-wrap">
+    <div class="status-icon">🔗</div>
+    <div class="status-title">請先完成身份綁定</div>
+    <div class="status-desc">查無您的員工資料<br>請聯繫店長完成 LINE 帳號綁定</div>
+  </div>
+</div>
+
+<!-- Access denied -->
+<div id="screen-denied" class="screen">
+  <div class="status-wrap">
+    <div class="status-icon">🚫</div>
+    <div class="status-title">此功能不開放</div>
+    <div class="status-desc">教課回報僅開放設計師使用</div>
+  </div>
+</div>
+
+<!-- Form -->
+<div id="screen-form" class="screen">
+  <div class="container">
+    <div class="emp-card">
+      <div class="emp-avatar" id="emp-initial">—</div>
+      <div>
+        <div class="emp-name" id="emp-name">—</div>
+        <div class="emp-role" id="emp-role">—</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="field">
+        <label>課程日期 <span class="req">*</span></label>
+        <input type="date" id="courseDate">
+        <div class="field-error" id="err-courseDate">請選擇課程日期</div>
+      </div>
+
+      <div class="field">
+        <label>主辦單位 ／ 邀約方 <span class="req">*</span></label>
+        <input type="text" id="organizer" placeholder="例：某某髮廊、某品牌活動">
+        <div class="field-error" id="err-organizer">請填寫主辦單位或邀約方</div>
+      </div>
+
+      <div class="field">
+        <label>費用 <span class="req">*</span></label>
+        <input type="number" id="estimatedFee" inputmode="numeric" min="0" step="1" placeholder="0">
+        <div class="field-hint">單位：新台幣</div>
+        <div class="field-error" id="err-estimatedFee">請填寫費用</div>
+      </div>
+
+      <div class="field">
+        <label>備註（選填）</label>
+        <textarea id="notes" placeholder="如為修改或取消，請在此說明…"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submit-btn" onclick="submitForm()">送出回報</button>
+  </div>
+</div>
+
+<!-- Success -->
+<div id="screen-success" class="screen">
+  <div class="status-wrap">
+    <div class="status-icon">✅</div>
+    <div class="status-title">回報已送出</div>
+    <div class="status-desc" id="success-detail"></div>
+  </div>
+</div>
+
+<!-- Error -->
+<div id="screen-error" class="screen">
+  <div class="status-wrap">
+    <div class="status-icon">❌</div>
+    <div class="status-title">送出失敗，請稍後再試</div>
+    <div class="status-desc">如持續發生請聯繫店長</div>
+    <button class="btn-retry" onclick="showScreen('screen-form')">返回重試</button>
+  </div>
+</div>
+
+<script>
+  const LIFF_ID = '2010336788-nDwPd2If';
+  const WEBHOOK = 'https://andy1996.zeabur.app/webhook/edu-report';
+  const LOOKUP  = 'https://andy1996.zeabur.app/webhook/employee-lookup';
+
+  const ALLOWED = ['設計師'];
+
+  let employee = null;
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('zh-TW', {
+      style: 'currency',
+      currency: 'TWD',
+      maximumFractionDigits: 0
+    }).format(Number(value));
+  }
+
+  async function init() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      const lineUserId = profile.userId;
+
+      const res = await fetch(`${LOOKUP}?lineUserId=${encodeURIComponent(lineUserId)}`);
+
+      if (res.status === 404) {
+        showScreen('screen-not-bound');
+        return;
+      }
+      if (!res.ok) throw new Error('lookup error');
+
+      const data = await res.json();
+
+      if (!data || !data.name) {
+        showScreen('screen-not-bound');
+        return;
+      }
+
+      if (!ALLOWED.includes(data.role)) {
+        showScreen('screen-denied');
+        return;
+      }
+
+      employee = { lineUserId, name: data.name, role: data.role, store: data.store };
+
+      document.getElementById('emp-initial').textContent = data.name.slice(-1);
+      document.getElementById('emp-name').textContent    = data.name;
+      document.getElementById('emp-role').textContent    = data.role;
+
+      showScreen('screen-form');
+
+    } catch (err) {
+      console.error(err);
+      showScreen('screen-not-bound');
+    }
+  }
+
+  function validate() {
+    const fields = ['courseDate', 'organizer', 'estimatedFee'];
+    let valid = true;
+
+    fields.forEach(id => {
+      const el  = document.getElementById(id);
+      const err = document.getElementById('err-' + id);
+      const empty = !el.value.toString().trim();
+      el.classList.toggle('invalid', empty);
+      err.classList.toggle('visible', empty);
+      if (empty) valid = false;
+    });
+
+    return valid;
+  }
+
+  async function submitForm() {
+    if (!validate()) return;
+
+    const courseDate   = document.getElementById('courseDate').value;
+    const organizer    = document.getElementById('organizer').value.trim();
+    const estimatedFee = Number(document.getElementById('estimatedFee').value);
+    const notes        = document.getElementById('notes').value.trim();
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled    = true;
+    btn.textContent = '送出中…';
+
+    try {
+      const res = await fetch(WEBHOOK, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lineUserId:   employee.lineUserId,
+          name:         employee.name,
+          store:        employee.store,
+          courseDate,
+          organizer,
+          estimatedFee,
+          notes,
+          submittedAt:  new Date().toISOString(),
+          source:       'oasis_edu_report'
+        })
+      });
+
+      if (!res.ok) throw new Error('submit failed');
+
+      document.getElementById('success-detail').textContent =
+        `${employee.name}・${organizer}・${courseDate}・${formatCurrency(estimatedFee)}`;
+
+      showScreen('screen-success');
+
+    } catch (err) {
+      console.error(err);
+      showScreen('screen-error');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '送出回報';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
